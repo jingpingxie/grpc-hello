@@ -1,0 +1,32 @@
+[ CA_default ]
+copy_extensions = copy
+
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+# 国家
+C = CN
+# 省份
+ST = Shanghai
+# 城市
+L = Shanghai
+# 组织
+O = Taiyi
+# 部门
+OU = Development
+# 域名
+CN = test.example.com
+
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+# 解析域名
+DNS.1 = *.test.example.com
+# 可配置多个域名，如下
+DNS.2 = *.example.com
