@@ -24,6 +24,9 @@ protoc --go-grpc_out=. hello.proto
 下载安装
 http://slproweb.com/download/Win64OpenSSL_Light-3_0_5.msi
 
+参考：
+https://blog.csdn.net/a145127/article/details/126311442
+
 1.创建一个“cert”目录用于，保存证书和配置文件。
 2.创建配置文件(openssl.cnf)，并保存到“cert”目录下。
 3.生成根证书（rootCa）
@@ -48,5 +51,17 @@ $ openssl req -new -nodes -key server/server.key -out server/server.csr -config 
 生成SAN证书
 $ openssl x509 -req -in server/server.csr -out server/server.pem -CA ca.crt -CAkey ca.key -CAcreateserial -extfile ./openssl.cnf -extensions 'v3_req'
 
-参考：
-https://blog.csdn.net/a145127/article/details/126311442
+# grpc-gateway
+参考：https://blog.csdn.net/Mr_XiMu/article/details/125000670
+go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+
+cd E:\source\gopath\src\grpc-hello\proto
+编译hello_http.proto
+protoc -I . --go_out ./ --go_opt paths=source_relative hello_http/hello_http.proto
+protoc -I . --go-grpc_out ./ --go-grpc_opt paths=source_relative hello_http/hello_http.proto
+
+编译hello_http.proto gateway
+protoc -I . --grpc-gateway_out ./ --grpc-gateway_opt logtostderr=true --grpc-gateway_opt paths=source_relative hello_http/hello_http.proto
