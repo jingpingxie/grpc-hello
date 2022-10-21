@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-
 	hello "grpc-hello/proto"
 	"net"
+	"net/http"
 )
 
 const (
@@ -66,7 +67,20 @@ func interceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInf
 	// 继续处理请求
 	return handler(ctx, req)
 }
+
+func startTrace() {
+	trace.AuthRequest = func(req *http.Request) (any, sensitive bool) {
+		return true, true
+	}
+
+	grpc.EnableTracing = true
+	go http.ListenAndServe(":50051", nil)
+	grpclog.Infoln("Trace listen on 50051")
+}
 func main() {
+	// 开启trace
+	go startTrace()
+
 	listen, err := net.Listen("tcp", Address)
 	if err != nil {
 		grpclog.Infof("failed to listen:%v\n", err)
@@ -89,6 +103,7 @@ func main() {
 		srv.Stop()
 		listen.Close()
 	}()
-	fmt.Println("Listen on " + Address + " with TLS + Token")
+
+	grpclog.Infoln("Listen on " + Address + " with TLS + Token")
 	err = srv.Serve(listen)
 }
