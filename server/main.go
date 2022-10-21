@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
 	hello "grpc-hello/proto"
 	"net"
-	"os"
 )
 
 const (
@@ -16,26 +19,52 @@ const (
 	Address = "127.0.0.1:50052"
 )
 
-type server struct {
+type HelloService struct {
 	hello.UnimplementedHelloServer
 }
 
-func (*server) SayHello(cn context.Context, req *hello.HelloRequest) (*hello.HelloResponse, error) {
-	grpclog.Infoln("request:", req.Name)
-	return &hello.HelloResponse{Message: "hello," + req.Name}, nil
+func (*HelloService) SayHello(ctx context.Context, in *hello.HelloRequest) (*hello.HelloResponse, error) {
+	resp := new(hello.HelloResponse)
+	resp.Message = fmt.Sprintf("Hello %s.", in.Name)
+
+	return resp, nil
 }
 
-// 判断所给路径文件/文件夹是否存在
-func PathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
+// auth 验证Token
+func auth(ctx context.Context) error {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Errorf(codes.Unauthenticated, "无Token认证信息")
 	}
-	//isnotexist来判断，是不是不存在的错误
-	if os.IsNotExist(err) { //如果返回的错误类型使用os.isNotExist()判断为true，说明文件或者文件夹不存在
-		return false, nil
+
+	var (
+		appid  string
+		appkey string
+	)
+
+	if val, ok := md["appid"]; ok {
+		appid = val[0]
 	}
-	return false, err //如果有错误了，但是不是不存在的错误，所以把这个错误原封不动的返回
+
+	if val, ok := md["appkey"]; ok {
+		appkey = val[0]
+	}
+
+	if appid != "101010" || appkey != "i am key" {
+		return status.Errorf(codes.Unauthenticated, "Token认证信息无效: appid=%s, appkey=%s", appid, appkey)
+	}
+
+	return nil
+}
+
+// interceptor 拦截器
+func interceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	err := auth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// 继续处理请求
+	return handler(ctx, req)
 }
 func main() {
 	listen, err := net.Listen("tcp", Address)
@@ -49,12 +78,17 @@ func main() {
 	if err != nil {
 		grpclog.Fatalf("Failed to generate credentials %v", err)
 	}
-	srv := grpc.NewServer(grpc.Creds(creds))
-	hello.RegisterHelloServer(srv, &server{})
+	var opts []grpc.ServerOption
+	opts = append(opts, grpc.Creds(creds))
+	// 注册interceptor
+	opts = append(opts, grpc.UnaryInterceptor(interceptor))
+
+	srv := grpc.NewServer(opts...)
+	hello.RegisterHelloServer(srv, &HelloService{})
 	defer func() {
 		srv.Stop()
 		listen.Close()
 	}()
-	fmt.Println("Listen on " + Address + " with TLS")
+	fmt.Println("Listen on " + Address + " with TLS + Token")
 	err = srv.Serve(listen)
 }
