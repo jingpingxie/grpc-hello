@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	hello2 "grpc-hello/hello_http/proto"
-	//hello2 "grpc-hello/proto/hello_http"
+	hello3 "grpc-hello/proto/hello_http"
 	"net"
 	"net/http"
 )
@@ -25,8 +25,19 @@ type HelloService struct {
 	hello2.UnimplementedHelloServer
 }
 
+type HelloService2 struct {
+	hello3.UnimplementedHelloHTTPServer
+}
+
 func (*HelloService) SayHello(ctx context.Context, in *hello2.HelloRequest) (*hello2.HelloResponse, error) {
 	resp := new(hello2.HelloResponse)
+	resp.Message = fmt.Sprintf("Hello %s.", in.Name)
+
+	return resp, nil
+}
+
+func (*HelloService2) SayHello(ctx context.Context, in *hello3.HelloHTTPRequest) (*hello3.HelloHTTPResponse, error) {
+	resp := new(hello3.HelloHTTPResponse)
 	resp.Message = fmt.Sprintf("Hello %s.", in.Name)
 
 	return resp, nil
@@ -99,7 +110,8 @@ func main() {
 	opts = append(opts, grpc.UnaryInterceptor(interceptor))
 
 	srv := grpc.NewServer(opts...)
-	hello2.RegisterHelloServer(srv, &HelloService{})
+	//hello2.RegisterHelloServer(srv, &HelloService{})
+	hello3.RegisterHelloHTTPServer(srv, &HelloService2{})
 	defer func() {
 		srv.Stop()
 		listen.Close()
