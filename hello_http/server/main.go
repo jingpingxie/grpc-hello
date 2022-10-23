@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	hello2 "grpc-hello/hello_http/proto"
+	//hello2 "grpc-hello/hello_http/proto"
 	hello3 "grpc-hello/proto/hello_http"
 	"net"
 	"net/http"
@@ -21,20 +21,20 @@ const (
 	Address = "127.0.0.1:50052"
 )
 
-type HelloService struct {
-	hello2.UnimplementedHelloServer
-}
+//type HelloService struct {
+//	hello2.UnimplementedHelloServer
+//}
 
 type HelloService2 struct {
 	hello3.UnimplementedHelloHTTPServer
 }
 
-func (*HelloService) SayHello(ctx context.Context, in *hello2.HelloRequest) (*hello2.HelloResponse, error) {
-	resp := new(hello2.HelloResponse)
-	resp.Message = fmt.Sprintf("Hello %s.", in.Name)
-
-	return resp, nil
-}
+//func (*HelloService) SayHello(ctx context.Context, in *hello2.HelloRequest) (*hello2.HelloResponse, error) {
+//	resp := new(hello2.HelloResponse)
+//	resp.Message = fmt.Sprintf("Hello %s.", in.Name)
+//
+//	return resp, nil
+//}
 
 func (*HelloService2) SayHello(ctx context.Context, in *hello3.HelloHTTPRequest) (*hello3.HelloHTTPResponse, error) {
 	resp := new(hello3.HelloHTTPResponse)
@@ -100,7 +100,7 @@ func main() {
 	}
 
 	// TLS认证
-	creds, err := credentials.NewServerTLSFromFile("../cert/server/server.pem", "../cert/server/server.key")
+	creds, err := credentials.NewServerTLSFromFile("../../cert/server/server.pem", "../../cert/server/server.key")
 	if err != nil {
 		grpclog.Fatalf("Failed to generate credentials %v", err)
 	}
@@ -117,6 +117,6 @@ func main() {
 		listen.Close()
 	}()
 
-	grpclog.Infoln("Listen on " + Address + " with TLS + Token")
+	fmt.Printf("Listen on " + Address + " with TLS + Token")
 	err = srv.Serve(listen)
 }

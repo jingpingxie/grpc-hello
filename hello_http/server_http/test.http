@@ -1,0 +1,4 @@
+POST http://localhost:8080/example/echo
+Content-Type: application/json
+
+{"name": "gRPC-HTTP is working!"}
